@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  ansible:
+    image: python:3.9-slim
+    container_name: ansible_container
+    volumes:
+      - ./ansible:/ansible
+    networks:
+      - ansible_network
+    command: >
+      bash -c "apt-get update &&
+      apt-get install -y sshpass &&
+      pip install ansible &&
+      sleep infinity"
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING=False
+    depends_on:
+      - ubuntu_target
+
+  ubuntu_target:
+    image: ubuntu:20.04
+    container_name: ubuntu_target_container
+    networks:
+      - ansible_network
+    command: bash -c "apt-get update && apt-get install -y openssh-server && mkdir /var/run/sshd && echo 'root:password' | chpasswd && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && /usr/sbin/sshd -D"
+    ports:
+      - "2222:22"
+
+networks:
+  ansible_network:
+    driver: bridge
